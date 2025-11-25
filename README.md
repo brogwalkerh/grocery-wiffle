@@ -1,2 +1,3 @@
 # grocery-wiffle
-App Repo
+
+A repository for apps that use alternative methods of data processing and democratization.
