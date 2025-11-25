@@ -73,7 +73,7 @@ class StoreTotalCard extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: storeTotal.isCheapest
                               ? theme.colorScheme.onPrimaryContainer
-                                  .withAlpha(179)
+                                  .withOpacity(0.7)
                               : theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -84,7 +84,7 @@ class StoreTotalCard extends StatelessWidget {
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: storeTotal.isCheapest
                                 ? theme.colorScheme.onPrimaryContainer
-                                    .withAlpha(179)
+                                    .withOpacity(0.7)
                                 : theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
@@ -108,7 +108,7 @@ class StoreTotalCard extends StatelessWidget {
                       'total',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: storeTotal.isCheapest
-                            ? theme.colorScheme.onPrimaryContainer.withAlpha(179)
+                            ? theme.colorScheme.onPrimaryContainer.withOpacity(0.7)
                             : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -149,7 +149,7 @@ class StoreTotalCard extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final color = isPrimary
-        ? theme.colorScheme.onPrimaryContainer.withAlpha(179)
+        ? theme.colorScheme.onPrimaryContainer.withOpacity(0.7)
         : theme.colorScheme.onSurfaceVariant;
 
     return Row(

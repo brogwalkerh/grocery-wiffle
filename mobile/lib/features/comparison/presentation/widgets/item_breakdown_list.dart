@@ -144,8 +144,8 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isCheapest
-                  ? theme.colorScheme.primaryContainer.withAlpha(77)
-                  : theme.colorScheme.surfaceContainerHighest.withAlpha(77),
+                  ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+                  : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(8),
               border: isCheapest
                   ? Border.all(

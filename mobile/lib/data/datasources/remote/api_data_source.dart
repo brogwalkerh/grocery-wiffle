@@ -1,10 +1,8 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 
-import '../../core/config/api_config.dart';
-import '../models/comparison.dart';
-import '../models/grocery_list.dart';
+import '../../../core/config/api_config.dart';
+import '../../models/comparison.dart';
+import '../../models/grocery_list.dart';
 
 /// Remote data source for API calls.
 class ApiDataSource {
