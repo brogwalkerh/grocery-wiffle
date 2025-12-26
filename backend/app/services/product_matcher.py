@@ -49,7 +49,7 @@ class ProductMatcher:
         "pieces": "ea",
     }
 
-    def __init__(self, db: Session, min_score: float = 60.0):
+    def __init__(self, db: Session, min_score: float = 50.0):
         """Initialize the product matcher.
 
         Args:
@@ -60,6 +60,34 @@ class ProductMatcher:
         self.min_score = min_score
         self._product_cache: Optional[list[Product]] = None
         self._name_cache: Optional[list[str]] = None
+        
+        # Common item aliases for better matching
+        self._aliases: dict[str, list[str]] = {
+            "milk": ["whole milk", "2% milk", "skim milk", "1% milk"],
+            "eggs": ["large eggs", "eggs dozen", "medium eggs"],
+            "bread": ["white bread", "wheat bread", "whole wheat bread"],
+            "chicken": ["chicken breast", "chicken thighs", "whole chicken"],
+            "beef": ["ground beef", "ground beef 80/20", "beef steak"],
+            "cheese": ["cheddar cheese", "american cheese", "shredded cheese"],
+            "butter": ["butter", "unsalted butter"],
+            "yogurt": ["greek yogurt", "plain yogurt"],
+            "juice": ["orange juice", "apple juice"],
+            "cereal": ["cheerios", "frosted flakes", "corn flakes"],
+            "chips": ["potato chips", "tortilla chips"],
+            "cookies": ["oreo cookies", "chocolate chip cookies"],
+            "apples": ["red apples", "green apples", "gala apples"],
+            "potatoes": ["russet potatoes", "red potatoes", "yukon gold potatoes"],
+            "onions": ["yellow onions", "red onions", "white onions"],
+            "spinach": ["baby spinach", "fresh spinach"],
+            "soup": ["chicken noodle soup", "tomato soup"],
+            "beans": ["black beans", "pinto beans", "kidney beans"],
+            "tomatoes": ["diced tomatoes", "crushed tomatoes", "tomato sauce"],
+            "soda": ["coca-cola", "pepsi", "sprite"],
+            "coke": ["coca-cola"],
+            "cola": ["coca-cola"],
+            "cream cheese": ["cream cheese", "philadelphia cream cheese"],
+            "sour cream": ["sour cream", "daisy sour cream"],
+        }
 
     def _load_products(self) -> None:
         """Load all products from the database into cache."""
@@ -166,17 +194,42 @@ class ProductMatcher:
 
         # Normalize the query
         normalized_query = self._normalize_name(query)
+        query_lower = query.lower().strip()
+        
+        # Check if query matches an alias - if so, search for the alias targets
+        alias_queries = [normalized_query]
+        if query_lower in self._aliases:
+            alias_queries.extend([self._normalize_name(a) for a in self._aliases[query_lower]])
 
-        # Use rapidfuzz to find matches
-        results = process.extract(
-            normalized_query,
-            self._name_cache,
-            scorer=fuzz.token_sort_ratio,
-            limit=limit,
-        )
+        # Collect all matches across query variations
+        all_results = []
+        for q in alias_queries:
+            results = process.extract(
+                q,
+                self._name_cache,
+                scorer=fuzz.token_sort_ratio,
+                limit=limit,
+            )
+            all_results.extend(results)
+        
+        # Also try partial ratio for short queries (better for "milk" matching "whole milk")
+        if len(query_lower) <= 6:
+            partial_results = process.extract(
+                normalized_query,
+                self._name_cache,
+                scorer=fuzz.partial_ratio,
+                limit=limit,
+            )
+            all_results.extend(partial_results)
+
+        # Deduplicate by index, keeping highest score
+        best_by_idx: dict[int, tuple[str, float]] = {}
+        for name, score, idx in all_results:
+            if idx not in best_by_idx or score > best_by_idx[idx][1]:
+                best_by_idx[idx] = (name, score)
 
         matches = []
-        for name, score, idx in results:
+        for idx, (name, score) in best_by_idx.items():
             if score >= self.min_score:
                 product = self._product_cache[idx]
                 matches.append({
@@ -188,7 +241,9 @@ class ProductMatcher:
                     "upc": product.upc,
                 })
 
-        return matches
+        # Sort by score descending
+        matches.sort(key=lambda x: x["score"], reverse=True)
+        return matches[:limit]
 
     def match_by_upc(self, upc: str) -> Optional[dict[str, Any]]:
         """Find a product by UPC code.

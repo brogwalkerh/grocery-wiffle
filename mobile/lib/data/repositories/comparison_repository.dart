@@ -15,10 +15,12 @@ class ComparisonRepository {
   Future<ComparisonResult> comparePrices({
     required int listId,
     required String zipCode,
+    int maxDriveTimeMinutes = 15,
   }) async {
     return _apiDataSource.comparePrices(
       listId: listId,
       zipCode: zipCode,
+      maxDriveTimeMinutes: maxDriveTimeMinutes,
     );
   }
 }

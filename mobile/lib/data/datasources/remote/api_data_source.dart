@@ -17,8 +17,8 @@ class ApiDataSource {
     return Dio(
       BaseOptions(
         baseUrl: ApiConfig.apiBaseUrl,
-        connectTimeout: Duration(seconds: ApiConfig.connectionTimeout),
-        receiveTimeout: Duration(seconds: ApiConfig.receiveTimeout),
+        connectTimeout: const Duration(seconds: ApiConfig.connectionTimeout),
+        receiveTimeout: const Duration(seconds: ApiConfig.receiveTimeout),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -112,6 +112,7 @@ class ApiDataSource {
   Future<ComparisonResult> comparePrices({
     required int listId,
     required String zipCode,
+    int maxDriveTimeMinutes = 15,
   }) async {
     try {
       final response = await _dio.post(
@@ -119,6 +120,7 @@ class ApiDataSource {
         data: {
           'list_id': listId,
           'zip_code': zipCode,
+          'max_drive_time_minutes': maxDriveTimeMinutes,
         },
       );
       return ComparisonResult.fromJson(response.data as Map<String, dynamic>);

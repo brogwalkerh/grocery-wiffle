@@ -1,5 +1,6 @@
-"""Kroger API client service stub."""
+"""Kroger API client service."""
 
+from time import time
 from typing import Any, Optional
 
 import httpx
@@ -8,10 +9,9 @@ from app.config import get_settings
 
 
 class KrogerClient:
-    """Service for interacting with the Kroger API.
+    """Service for interacting with the Kroger API using OAuth2 client credentials.
 
-    This is a stub implementation. Actual Kroger API credentials
-    will be provided later.
+    Falls back to mock data when credentials are missing.
     """
 
     def __init__(self) -> None:
@@ -19,26 +19,49 @@ class KrogerClient:
         settings = get_settings()
         self.client_id = settings.kroger_client_id
         self.client_secret = settings.kroger_client_secret
-        self.base_url = settings.kroger_base_url
+        self.base_url = settings.kroger_base_url.rstrip("/")
+        self.scopes = settings.kroger_scopes
+        self.redirect_uri = getattr(settings, "kroger_redirect_uri", None)
         self._access_token: Optional[str] = None
         self._token_expires_at: Optional[float] = None
+        self._http = httpx.AsyncClient(base_url=self.base_url, timeout=15.0)
 
     def _is_configured(self) -> bool:
         """Check if the client is properly configured with credentials."""
         return bool(self.client_id and self.client_secret)
 
     async def _ensure_access_token(self) -> None:
-        """Ensure we have a valid access token.
-
-        Placeholder for OAuth2 client credentials flow.
-        """
+        """Ensure we have a valid access token using client credentials."""
         if not self._is_configured():
             raise ValueError("Kroger API credentials not configured")
 
-        # TODO: Implement OAuth2 token refresh
-        # The Kroger API uses OAuth2 client credentials flow
-        # POST to https://api.kroger.com/v1/connect/oauth2/token
-        pass
+        # Reuse token if still valid (60s buffer)
+        if self._access_token and self._token_expires_at:
+            if time() < self._token_expires_at - 60:
+                return
+
+        token_url = f"{self.base_url}/connect/oauth2/token"
+        data = {
+            "grant_type": "client_credentials",
+            "scope": self.scopes,
+        }
+
+        auth = (self.client_id or "", self.client_secret or "")
+
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(token_url, data=data, auth=auth)
+            resp.raise_for_status()
+            payload = resp.json()
+
+        self._access_token = payload.get("access_token")
+        expires_in = payload.get("expires_in", 1800)  # default 30m
+        self._token_expires_at = time() + float(expires_in)
+
+        if not self._access_token:
+            raise ValueError("Failed to obtain Kroger access token")
+
+    def _auth_headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self._access_token}"} if self._access_token else {}
 
     async def search_products(
         self,
@@ -64,9 +87,23 @@ class KrogerClient:
             # Return mock data for development
             return self._get_mock_search_results(query)
 
-        # TODO: Implement actual API call
-        # GET /products?filter.term={query}&filter.locationId={locationId}&filter.limit={limit}
-        return []
+        await self._ensure_access_token()
+
+        params = {
+            "filter.term": query,
+            "filter.limit": limit,
+        }
+        if location_id:
+            params["filter.locationId"] = location_id
+
+        resp = await self._http.get(
+            "/products",
+            params=params,
+            headers=self._auth_headers(),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("data", [])
 
     async def get_product_by_id(self, product_id: str) -> Optional[dict[str, Any]]:
         """Get product details by Kroger product ID.
@@ -96,9 +133,15 @@ class KrogerClient:
         if not self._is_configured():
             return None
 
-        # TODO: Implement actual API call
-        # GET /products?filter.upc={upc}
-        return None
+        await self._ensure_access_token()
+        resp = await self._http.get(
+            "/products",
+            params={"filter.upc": upc, "filter.limit": 1},
+            headers=self._auth_headers(),
+        )
+        resp.raise_for_status()
+        data = resp.json().get("data", [])
+        return data[0] if data else None
 
     async def get_locations(
         self,
@@ -120,9 +163,20 @@ class KrogerClient:
             # Return mock data for development
             return self._get_mock_locations(zip_code)
 
-        # TODO: Implement actual API call
-        # GET /locations?filter.zipCode.near={zipCode}&filter.radiusInMiles={radius}&filter.limit={limit}
-        return []
+        await self._ensure_access_token()
+        params = {
+            "filter.zipCode.near": zip_code,
+            "filter.radiusInMiles": radius_miles,
+            "filter.limit": limit,
+        }
+        resp = await self._http.get(
+            "/locations",
+            params=params,
+            headers=self._auth_headers(),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("data", [])
 
     async def get_product_prices(
         self,
@@ -141,9 +195,23 @@ class KrogerClient:
         if not self._is_configured():
             return []
 
-        # TODO: Implement actual API call
-        # Products endpoint returns prices when locationId is specified
-        return []
+        await self._ensure_access_token()
+        # Kroger returns pricing when locationId provided on /products
+        params = {
+            "filter.locationId": location_id,
+            "filter.productId": ",".join(product_ids),
+        }
+        resp = await self._http.get(
+            "/products",
+            params=params,
+            headers=self._auth_headers(),
+        )
+        resp.raise_for_status()
+        return resp.json().get("data", [])
+
+    async def close(self) -> None:
+        """Close underlying HTTP client."""
+        await self._http.aclose()
 
     def _get_mock_search_results(self, query: str) -> list[dict[str, Any]]:
         """Return mock search results for development.

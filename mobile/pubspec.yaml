@@ -22,6 +22,7 @@ dependencies:
   # Networking
   http: ^1.1.0
   dio: ^5.4.0
+  web_socket_channel: ^2.4.0
 
   # Local Storage
   sqflite: ^2.3.0
@@ -56,10 +57,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: fonts/Roboto-Regular.ttf
-        - asset: fonts/Roboto-Bold.ttf
-          weight: 700

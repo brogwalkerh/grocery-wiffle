@@ -1,0 +1,26 @@
+# Replace with your actual domain
+{$DOMAIN:localhost} {
+    # Reverse proxy to backend
+    reverse_proxy backend:8000
+
+    # Enable compression
+    encode gzip
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    # Logging
+    log {
+        output file /data/access.log
+        format json
+    }
+}
+
+# Health check endpoint (no SSL needed)
+:80 {
+    respond /health "OK" 200
+}

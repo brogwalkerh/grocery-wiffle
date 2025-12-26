@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/formatters.dart';
 import '../../../../data/models/comparison.dart';
+import '../../../../data/models/store.dart';
 
 /// List showing item-by-item price breakdown.
 class ItemBreakdownList extends StatelessWidget {
@@ -15,8 +16,6 @@ class ItemBreakdownList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -59,7 +58,9 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
                 if (item.cheapestPrice != null)
                   Text(
                     Formatters.formatCurrency(
-                      item.cheapestPrice!.currentPrice * item.quantity,
+                      // Use the pre-calculated total which accounts for unit conversions
+                      item.cheapestPrice!.calculatedTotal ?? 
+                        (item.cheapestPrice!.currentPrice * item.quantity),
                     ),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
@@ -94,13 +95,8 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
     final item = widget.item;
     final parts = <String>[];
 
-    if (item.quantity != 1.0 || item.unit != null) {
-      final qty = Formatters.formatQuantity(item.quantity);
-      if (item.unit != null) {
-        parts.add('$qty ${item.unit}');
-      } else {
-        parts.add('Qty: $qty');
-      }
+    if (item.quantity != 1) {
+      parts.add('Qty: ${item.quantity}');
     }
 
     if (item.matchConfidence < 100) {
@@ -137,7 +133,9 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
       child: Column(
         children: item.pricesByStore.map((storePrice) {
           final isCheapest = storePrice.storeId == item.cheapestStoreId;
-          final total = storePrice.currentPrice * item.quantity;
+          // Use calculatedTotal for unit-aware pricing
+          final total = storePrice.calculatedTotal ?? 
+              (storePrice.currentPrice * item.quantity);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
@@ -179,7 +177,25 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
                           ],
                         ],
                       ),
-                      if (storePrice.isOnSale)
+                      if (storePrice.isEstimate)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: theme.colorScheme.outline,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Estimated',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.outline,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        )
+                      else if (storePrice.isOnSale)
                         Row(
                           children: [
                             Icon(
@@ -208,11 +224,13 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
                         fontWeight: FontWeight.w600,
                         color: isCheapest
                             ? theme.colorScheme.primary
-                            : null,
+                            : storePrice.isEstimate
+                                ? theme.colorScheme.outline
+                                : null,
                       ),
                     ),
                     Text(
-                      '${Formatters.formatCurrency(storePrice.currentPrice)}/ea',
+                      _formatUnitPrice(storePrice),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -225,5 +243,30 @@ class _ItemBreakdownTileState extends State<_ItemBreakdownTile> {
         }).toList(),
       ),
     );
+  }
+
+  /// Format the unit price display based on product size
+  String _formatUnitPrice(StorePrice storePrice) {
+    final price = Formatters.formatCurrency(storePrice.currentPrice);
+    final size = storePrice.productSize;
+    
+    if (size == null || size.isEmpty) {
+      return '$price/ea';
+    }
+    
+    // Check if it's a per-pound price (common for produce)
+    final sizeLower = size.toLowerCase();
+    if (sizeLower.contains('/lb') || sizeLower.contains('per lb') || 
+        sizeLower.contains('per pound') || sizeLower == 'lb') {
+      return '$price/lb';
+    }
+    
+    // Check for other common units
+    if (sizeLower.contains('/oz') || sizeLower.contains('per oz')) {
+      return '$price/oz';
+    }
+    
+    // Show the size if it's a specific quantity
+    return '$price ($size)';
   }
 }

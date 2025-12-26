@@ -11,8 +11,7 @@ void main() {
       final json = {
         'id': '1',
         'name': 'Milk',
-        'quantity': 2.0,
-        'unit': 'gallon',
+        'quantity': 2,
         'notes': 'Get organic',
         'product_id': 123,
         'position': 0,
@@ -23,8 +22,7 @@ void main() {
 
       expect(item.id, '1');
       expect(item.name, 'Milk');
-      expect(item.quantity, 2.0);
-      expect(item.unit, 'gallon');
+      expect(item.quantity, 2);
       expect(item.notes, 'Get organic');
       expect(item.productId, 123);
       expect(item.position, 0);
@@ -35,30 +33,28 @@ void main() {
       const item = GroceryListItem(
         id: '1',
         name: 'Milk',
-        quantity: 2.0,
-        unit: 'gallon',
+        quantity: 2,
       );
 
       final json = item.toJson();
 
       expect(json['id'], '1');
       expect(json['name'], 'Milk');
-      expect(json['quantity'], 2.0);
-      expect(json['unit'], 'gallon');
+      expect(json['quantity'], 2);
     });
 
     test('copyWith creates a new instance with updated values', () {
       const item = GroceryListItem(
         id: '1',
         name: 'Milk',
-        quantity: 1.0,
+        quantity: 1,
       );
 
-      final updated = item.copyWith(quantity: 2.0, isChecked: true);
+      final updated = item.copyWith(quantity: 2, isChecked: true);
 
       expect(updated.id, '1');
       expect(updated.name, 'Milk');
-      expect(updated.quantity, 2.0);
+      expect(updated.quantity, 2);
       expect(updated.isChecked, true);
     });
   });
@@ -73,7 +69,7 @@ void main() {
           {
             'id': '1',
             'name': 'Milk',
-            'quantity': 1.0,
+            'quantity': 1,
             'position': 0,
           },
         ],

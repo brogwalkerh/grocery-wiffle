@@ -10,11 +10,11 @@ class ItemPriceComparison extends Equatable {
   /// Product ID if matched.
   final int? productId;
 
-  /// Quantity.
-  final double quantity;
+  /// Quantity (how many to buy).
+  final int quantity;
 
-  /// Unit of measurement.
-  final String? unit;
+  /// Product size found (e.g., "5 lb", "16 oz").
+  final String? productSize;
 
   /// Match confidence score (0-100).
   final double matchConfidence;
@@ -30,7 +30,7 @@ class ItemPriceComparison extends Equatable {
     required this.itemName,
     this.productId,
     required this.quantity,
-    this.unit,
+    this.productSize,
     required this.matchConfidence,
     required this.pricesByStore,
     this.cheapestStoreId,
@@ -41,8 +41,8 @@ class ItemPriceComparison extends Equatable {
     return ItemPriceComparison(
       itemName: json['item_name'] as String,
       productId: json['product_id'] as int?,
-      quantity: (json['quantity'] as num).toDouble(),
-      unit: json['unit'] as String?,
+      quantity: (json['quantity'] as num).toInt(),
+      productSize: json['product_size'] as String?,
       matchConfidence: (json['match_confidence'] as num).toDouble(),
       pricesByStore: (json['prices_by_store'] as List<dynamic>)
           .map((price) => StorePrice.fromJson(price as Map<String, dynamic>))
@@ -57,7 +57,7 @@ class ItemPriceComparison extends Equatable {
       'item_name': itemName,
       'product_id': productId,
       'quantity': quantity,
-      'unit': unit,
+      'product_size': productSize,
       'match_confidence': matchConfidence,
       'prices_by_store': pricesByStore.map((p) => p.toJson()).toList(),
       'cheapest_store_id': cheapestStoreId,
@@ -73,13 +73,15 @@ class ItemPriceComparison extends Equatable {
         );
   }
 
-  /// Get the total price for this item (quantity * price).
+  /// Get the total price for this item (uses pre-calculated total if available).
   double getTotalPrice(int storeId) {
     final storePrice = pricesByStore.cast<StorePrice?>().firstWhere(
           (p) => p?.storeId == storeId,
           orElse: () => null,
         );
-    return storePrice != null ? storePrice.currentPrice * quantity : 0;
+    if (storePrice == null) return 0;
+    // Use calculatedTotal if available, otherwise fall back to simple multiplication
+    return storePrice.calculatedTotal ?? (storePrice.currentPrice * quantity);
   }
 
   @override
@@ -87,7 +89,7 @@ class ItemPriceComparison extends Equatable {
         itemName,
         productId,
         quantity,
-        unit,
+        productSize,
         matchConfidence,
         pricesByStore,
         cheapestStoreId,
@@ -120,6 +122,15 @@ class StoreTotalComparison extends Equatable {
   /// Whether this is the cheapest store.
   final bool isCheapest;
 
+  /// Whether this store has all items in the list.
+  final bool hasAllItems;
+
+  /// Estimated drive time in minutes.
+  final int? estimatedDriveTimeMinutes;
+
+  /// Distance in miles.
+  final double? distanceMiles;
+
   /// Creates a store total comparison.
   const StoreTotalComparison({
     required this.storeId,
@@ -130,6 +141,9 @@ class StoreTotalComparison extends Equatable {
     required this.itemsFound,
     required this.itemsOnSale,
     this.isCheapest = false,
+    this.hasAllItems = false,
+    this.estimatedDriveTimeMinutes,
+    this.distanceMiles,
   });
 
   /// Creates from JSON.
@@ -143,6 +157,9 @@ class StoreTotalComparison extends Equatable {
       itemsFound: json['items_found'] as int,
       itemsOnSale: json['items_on_sale'] as int,
       isCheapest: json['is_cheapest'] as bool? ?? false,
+      hasAllItems: json['has_all_items'] as bool? ?? false,
+      estimatedDriveTimeMinutes: json['estimated_drive_time_minutes'] as int?,
+      distanceMiles: (json['distance_miles'] as num?)?.toDouble(),
     );
   }
 
@@ -157,6 +174,9 @@ class StoreTotalComparison extends Equatable {
       'items_found': itemsFound,
       'items_on_sale': itemsOnSale,
       'is_cheapest': isCheapest,
+      'has_all_items': hasAllItems,
+      'estimated_drive_time_minutes': estimatedDriveTimeMinutes,
+      'distance_miles': distanceMiles,
     };
   }
 
@@ -170,6 +190,9 @@ class StoreTotalComparison extends Equatable {
         itemsFound,
         itemsOnSale,
         isCheapest,
+        hasAllItems,
+        estimatedDriveTimeMinutes,
+        distanceMiles,
       ];
 }
 
@@ -184,6 +207,9 @@ class ComparisonResult extends Equatable {
   /// ZIP code used for comparison.
   final String zipCode;
 
+  /// Total number of items in the list.
+  final int totalItems;
+
   /// Store totals.
   final List<StoreTotalComparison> storeTotals;
 
@@ -193,6 +219,9 @@ class ComparisonResult extends Equatable {
   /// ID of the cheapest store overall.
   final int? cheapestStoreId;
 
+  /// ID of the cheapest store with all items.
+  final int? cheapestCompleteStoreId;
+
   /// Potential savings vs most expensive option.
   final double potentialSavings;
 
@@ -201,9 +230,11 @@ class ComparisonResult extends Equatable {
     required this.listId,
     required this.listName,
     required this.zipCode,
+    required this.totalItems,
     required this.storeTotals,
     required this.itemBreakdown,
     this.cheapestStoreId,
+    this.cheapestCompleteStoreId,
     required this.potentialSavings,
   });
 
@@ -213,6 +244,7 @@ class ComparisonResult extends Equatable {
       listId: json['list_id'] as int,
       listName: json['list_name'] as String,
       zipCode: json['zip_code'] as String,
+      totalItems: json['total_items'] as int? ?? 0,
       storeTotals: (json['store_totals'] as List<dynamic>)
           .map((st) => StoreTotalComparison.fromJson(st as Map<String, dynamic>))
           .toList(),
@@ -220,6 +252,7 @@ class ComparisonResult extends Equatable {
           .map((ib) => ItemPriceComparison.fromJson(ib as Map<String, dynamic>))
           .toList(),
       cheapestStoreId: json['cheapest_store_id'] as int?,
+      cheapestCompleteStoreId: json['cheapest_complete_store_id'] as int?,
       potentialSavings: (json['potential_savings'] as num).toDouble(),
     );
   }
@@ -230,9 +263,11 @@ class ComparisonResult extends Equatable {
       'list_id': listId,
       'list_name': listName,
       'zip_code': zipCode,
+      'total_items': totalItems,
       'store_totals': storeTotals.map((st) => st.toJson()).toList(),
       'item_breakdown': itemBreakdown.map((ib) => ib.toJson()).toList(),
       'cheapest_store_id': cheapestStoreId,
+      'cheapest_complete_store_id': cheapestCompleteStoreId,
       'potential_savings': potentialSavings,
     };
   }
@@ -246,14 +281,26 @@ class ComparisonResult extends Equatable {
         );
   }
 
+  /// Get stores with all items.
+  List<StoreTotalComparison> get completeStores {
+    return storeTotals.where((st) => st.hasAllItems).toList();
+  }
+
+  /// Get stores missing some items.
+  List<StoreTotalComparison> get incompleteStores {
+    return storeTotals.where((st) => !st.hasAllItems).toList();
+  }
+
   @override
   List<Object?> get props => [
         listId,
         listName,
         zipCode,
+        totalItems,
         storeTotals,
         itemBreakdown,
         cheapestStoreId,
+        cheapestCompleteStoreId,
         potentialSavings,
       ];
 }

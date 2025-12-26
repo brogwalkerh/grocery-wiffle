@@ -90,6 +90,15 @@ class StorePrice extends Equatable {
   /// Unit price.
   final double? unitPrice;
 
+  /// The calculated total for the requested quantity.
+  final double? calculatedTotal;
+
+  /// The product size found (e.g., "5 lb", "16 oz").
+  final String? productSize;
+
+  /// Whether this price is an estimate (not scraped from the store).
+  final bool isEstimate;
+
   /// Creates a store price.
   const StorePrice({
     required this.storeId,
@@ -100,6 +109,9 @@ class StorePrice extends Equatable {
     this.isOnSale = false,
     this.saleExpires,
     this.unitPrice,
+    this.calculatedTotal,
+    this.productSize,
+    this.isEstimate = false,
   });
 
   /// Creates a store price from JSON.
@@ -115,6 +127,9 @@ class StorePrice extends Equatable {
           ? DateTime.parse(json['sale_expires'] as String)
           : null,
       unitPrice: (json['unit_price'] as num?)?.toDouble(),
+      calculatedTotal: (json['calculated_total'] as num?)?.toDouble(),
+      productSize: json['product_size'] as String?,
+      isEstimate: json['is_estimate'] as bool? ?? false,
     );
   }
 
@@ -129,6 +144,9 @@ class StorePrice extends Equatable {
       'is_on_sale': isOnSale,
       'sale_expires': saleExpires?.toIso8601String(),
       'unit_price': unitPrice,
+      'calculated_total': calculatedTotal,
+      'product_size': productSize,
+      'is_estimate': isEstimate,
     };
   }
 
@@ -145,5 +163,8 @@ class StorePrice extends Equatable {
         isOnSale,
         saleExpires,
         unitPrice,
+        calculatedTotal,
+        productSize,
+        isEstimate,
       ];
 }

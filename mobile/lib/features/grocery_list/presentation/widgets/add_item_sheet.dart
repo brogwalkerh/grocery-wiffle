@@ -21,25 +21,9 @@ class _AddItemSheetState extends State<AddItemSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _quantityController;
   late final TextEditingController _notesController;
-  String? _selectedUnit;
 
   final _formKey = GlobalKey<FormState>();
   bool get _isEditing => widget.existingItem != null;
-
-  static const _units = [
-    'each',
-    'lb',
-    'oz',
-    'gallon',
-    'liter',
-    'dozen',
-    'pack',
-    'bag',
-    'box',
-    'bottle',
-    'can',
-    'jar',
-  ];
 
   @override
   void initState() {
@@ -49,7 +33,6 @@ class _AddItemSheetState extends State<AddItemSheet> {
       text: widget.existingItem?.quantity.toString() ?? '1',
     );
     _notesController = TextEditingController(text: widget.existingItem?.notes);
-    _selectedUnit = widget.existingItem?.unit;
   }
 
   @override
@@ -65,8 +48,7 @@ class _AddItemSheetState extends State<AddItemSheet> {
       final item = GroceryListItem(
         id: widget.existingItem?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
-        quantity: double.tryParse(_quantityController.text) ?? 1.0,
-        unit: _selectedUnit,
+        quantity: int.tryParse(_quantityController.text) ?? 1,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -82,133 +64,218 @@ class _AddItemSheetState extends State<AddItemSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Padding(
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _isEditing ? 'Edit Item' : 'Add Item',
-                        style: theme.textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Name field
-                TextFormField(
-                  controller: _nameController,
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Item Name',
-                    hintText: 'e.g., Milk, Bread, Eggs',
-                    prefixIcon: Icon(Icons.shopping_basket_outlined),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter an item name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Quantity and Unit row
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: _quantityController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity',
-                          prefixIcon: Icon(Icons.numbers),
-                        ),
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty) {
-                            final qty = double.tryParse(value);
-                            if (qty == null || qty <= 0) {
-                              return 'Invalid quantity';
-                            }
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 3,
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedUnit,
-                        decoration: const InputDecoration(
-                          labelText: 'Unit',
-                          prefixIcon: Icon(Icons.straighten),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('No unit'),
-                          ),
-                          ..._units.map((unit) => DropdownMenuItem(
-                                value: unit,
-                                child: Text(unit),
-                              )),
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
+              
+              // Header with icon
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primary.withOpacity(0.1),
+                          colorScheme.primary.withOpacity(0.05),
                         ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedUnit = value;
-                          });
-                        },
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      _isEditing ? Icons.edit_outlined : Icons.add_shopping_cart_outlined,
+                      color: colorScheme.primary,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isEditing ? 'Edit Item' : 'Add Item',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _isEditing ? 'Update item details' : 'Add to your grocery list',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Name field with clean design
+              TextFormField(
+                controller: _nameController,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Item Name',
+                  hintText: 'e.g., Milk, Bread, Eggs',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                  prefixIcon: Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.shopping_basket_outlined,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter an item name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Quantity field
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Quantity',
+                  hintText: 'How many?',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                  prefixIcon: Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.numbers,
+                      size: 20,
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                ),
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    final qty = int.tryParse(value);
+                    if (qty == null || qty <= 0) {
+                      return 'Enter a valid number';
+                    }
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Notes field
+              TextFormField(
+                controller: _notesController,
+                maxLines: 3,
+                minLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                style: theme.textTheme.bodyLarge,
+                decoration: InputDecoration(
+                  labelText: 'Notes (optional)',
+                  hintText: 'Brand, size, or other preferences',
+                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                  prefixIcon: Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.notes_outlined,
+                      size: 20,
+                      color: colorScheme.tertiary,
+                    ),
+                  ),
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Submit button with modern design
+              FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  backgroundColor: colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isEditing ? Icons.check_circle_outline : Icons.add_circle_outline,
+                      size: 20,
+                      color: colorScheme.onPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isEditing ? 'Save Changes' : 'Add to List',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-
-                // Notes field
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optional)',
-                    hintText: 'Any special instructions',
-                    prefixIcon: Icon(Icons.notes),
-                    alignLabelWithHint: true,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Submit button
-                FilledButton.icon(
-                  onPressed: _submit,
-                  icon: Icon(_isEditing ? Icons.save : Icons.add),
-                  label: Text(_isEditing ? 'Save Changes' : 'Add to List'),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
       ),

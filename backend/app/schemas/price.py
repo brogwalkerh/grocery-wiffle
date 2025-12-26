@@ -45,6 +45,9 @@ class StorePrice(BaseModel):
     is_on_sale: bool = False
     sale_expires: Optional[date] = None
     unit_price: Optional[float] = None
+    product_size: Optional[str] = None
+    calculated_total: Optional[float] = None
+    is_estimate: bool = False
 
 
 class ItemPriceComparison(BaseModel):
@@ -70,6 +73,9 @@ class StoreTotalComparison(BaseModel):
     items_found: int
     items_on_sale: int
     is_cheapest: bool = False
+    has_all_items: bool = False
+    estimated_drive_time_minutes: Optional[int] = None
+    distance_miles: Optional[float] = None
 
 
 class ComparisonRequest(BaseModel):
@@ -77,6 +83,7 @@ class ComparisonRequest(BaseModel):
 
     list_id: int = Field(..., description="Grocery list ID to compare")
     zip_code: str = Field(..., min_length=5, max_length=10, description="ZIP code for store lookup")
+    max_drive_time_minutes: int = Field(15, ge=5, le=60, description="Maximum drive time in minutes")
 
 
 class ComparisonResponse(BaseModel):
@@ -85,7 +92,9 @@ class ComparisonResponse(BaseModel):
     list_id: int
     list_name: str
     zip_code: str
+    total_items: int = Field(..., description="Total number of items in the list")
     store_totals: list[StoreTotalComparison]
     item_breakdown: list[ItemPriceComparison]
     cheapest_store_id: Optional[int] = None
+    cheapest_complete_store_id: Optional[int] = Field(None, description="Cheapest store with all items")
     potential_savings: float = Field(..., description="Savings compared to most expensive option")

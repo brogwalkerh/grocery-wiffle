@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'core/theme/app_theme.dart';
-import 'features/grocery_list/presentation/screens/grocery_lists_screen.dart';
-import 'features/grocery_list/presentation/screens/grocery_list_detail_screen.dart';
-import 'features/comparison/presentation/screens/comparison_screen.dart';
+import 'core/theme/modern_theme.dart';
+import 'features/grocery_list/presentation/screens/modern_home_screen.dart';
+import 'features/grocery_list/presentation/screens/modern_list_detail_screen.dart';
+import 'features/comparison/presentation/screens/modern_comparison_screen.dart';
 import 'features/settings/settings_screen.dart';
 
 /// Main application widget.
@@ -17,8 +17,8 @@ class GroceryCompareApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'GroceryCompare',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: ModernTheme.lightTheme,
+      darkTheme: ModernTheme.darkTheme,
       themeMode: ThemeMode.system,
       routerConfig: _router,
     );
@@ -32,14 +32,14 @@ final _router = GoRouter(
     GoRoute(
       path: '/',
       name: 'home',
-      builder: (context, state) => const GroceryListsScreen(),
+      builder: (context, state) => const ModernHomeScreen(),
       routes: [
         GoRoute(
           path: 'list/:id',
           name: 'list-detail',
           builder: (context, state) {
             final listId = state.pathParameters['id']!;
-            return GroceryListDetailScreen(listId: listId);
+            return ModernListDetailScreen(listId: listId);
           },
         ),
         GoRoute(
@@ -47,7 +47,7 @@ final _router = GoRouter(
           name: 'compare',
           builder: (context, state) {
             final listId = state.pathParameters['listId']!;
-            return ComparisonScreen(listId: listId);
+            return ModernComparisonScreen(listId: listId);
           },
         ),
         GoRoute(

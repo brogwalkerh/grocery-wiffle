@@ -5,14 +5,11 @@ class GroceryListItem extends Equatable {
   /// Unique identifier for the item.
   final String id;
 
-  /// Name of the item.
+  /// Name of the item (e.g., "flour", "milk", "eggs").
   final String name;
 
-  /// Quantity of the item.
-  final double quantity;
-
-  /// Unit of measurement (oz, lb, count, etc.).
-  final String? unit;
+  /// How many of this item to buy (default 1).
+  final int quantity;
 
   /// Additional notes for the item.
   final String? notes;
@@ -30,8 +27,7 @@ class GroceryListItem extends Equatable {
   const GroceryListItem({
     required this.id,
     required this.name,
-    this.quantity = 1.0,
-    this.unit,
+    this.quantity = 1,
     this.notes,
     this.productId,
     this.position = 0,
@@ -42,8 +38,7 @@ class GroceryListItem extends Equatable {
   GroceryListItem copyWith({
     String? id,
     String? name,
-    double? quantity,
-    String? unit,
+    int? quantity,
     String? notes,
     int? productId,
     int? position,
@@ -53,7 +48,6 @@ class GroceryListItem extends Equatable {
       id: id ?? this.id,
       name: name ?? this.name,
       quantity: quantity ?? this.quantity,
-      unit: unit ?? this.unit,
       notes: notes ?? this.notes,
       productId: productId ?? this.productId,
       position: position ?? this.position,
@@ -66,11 +60,10 @@ class GroceryListItem extends Equatable {
     return GroceryListItem(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String,
-      quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
-      unit: json['unit'] as String?,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       notes: json['notes'] as String?,
-      productId: json['product_id'] as int?,
-      position: json['position'] as int? ?? 0,
+      productId: json['product_id'] is int ? json['product_id'] as int : int.tryParse(json['product_id']?.toString() ?? ''),
+      position: json['position'] is int ? json['position'] as int : int.tryParse(json['position']?.toString() ?? '') ?? 0,
       isChecked: json['is_checked'] as bool? ?? false,
     );
   }
@@ -81,7 +74,6 @@ class GroceryListItem extends Equatable {
       'id': id,
       'name': name,
       'quantity': quantity,
-      'unit': unit,
       'notes': notes,
       'product_id': productId,
       'position': position,
@@ -94,7 +86,6 @@ class GroceryListItem extends Equatable {
         id,
         name,
         quantity,
-        unit,
         notes,
         productId,
         position,

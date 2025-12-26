@@ -1,14 +1,61 @@
 # GroceryCompare Mobile App
 
-A cross-platform mobile application for comparing grocery prices across local stores.
+A **self-contained** cross-platform mobile application for comparing grocery prices across local stores using **real-time API data**.
 
 ## Features
 
-- **Grocery List Management**: Create and manage multiple shopping lists
-- **Price Comparison**: Compare prices across different stores in your area
-- **Product Search**: Autocomplete search for products
-- **Offline Support**: Access your lists offline with SQLite storage
-- **Location Services**: Auto-detect ZIP code or enter manually
+- **Grocery List Management**: Create and manage multiple shopping lists locally
+- **Live Price Comparison**: Search real grocery prices from major retailers
+- **Real-Time Search**: Look up any grocery item on the fly
+- **Offline Lists**: Your grocery lists are stored locally on your device
+- **Location-Based**: Find stores near your ZIP code
+- **No Backend Required**: Works as a standalone app - no server needed!
+
+## Supported Stores
+
+Currently supported through the Kroger API (covers 2,800+ stores):
+- Kroger
+- Ralphs
+- Fred Meyer
+- Fry's Food
+- King Soopers
+- Smith's
+- QFC
+- Mariano's
+- Pick 'n Save
+- Metro Market
+- And more Kroger family stores...
+
+## Setup - API Configuration
+
+To enable live price searching, you need to configure the Kroger API (free):
+
+### 1. Get Kroger API Credentials
+
+1. Go to [developer.kroger.com](https://developer.kroger.com)
+2. Click "Create an Account" and sign up (it's free)
+3. Go to "Manage Apps" and click "Register App"
+4. Fill in app details (any name is fine)
+5. Copy your **Client ID** and **Client Secret**
+
+### 2. Configure the App
+
+Edit `lib/core/config/grocery_api_config.dart`:
+
+```dart
+class GroceryApiConfig {
+  static const String krogerClientId = 'YOUR_CLIENT_ID_HERE';
+  static const String krogerClientSecret = 'YOUR_CLIENT_SECRET_HERE';
+}
+```
+
+### 3. Run the App
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
 
 ## Project Structure
 
@@ -23,22 +70,13 @@ lib/
 │   └── constants/          # App constants
 ├── data/
 │   ├── models/             # Data models
-│   ├── repositories/       # Repository layer
+│   ├── services/           # Live search & comparison services
 │   ├── datasources/
-│   │   ├── local/          # SQLite data sources
-│   │   └── remote/         # API data sources
+│   │   └── local/          # Local storage (Hive)
 │   └── providers/          # Riverpod providers
 ├── features/
 │   ├── grocery_list/       # Grocery list feature
-│   │   ├── presentation/
-│   │   │   ├── screens/
-│   │   │   └── widgets/
-│   │   └── domain/
 │   ├── comparison/         # Price comparison feature
-│   │   ├── presentation/
-│   │   │   ├── screens/
-│   │   │   └── widgets/
-│   │   └── domain/
 │   └── settings/           # Settings feature
 └── shared/
     └── widgets/            # Shared widgets

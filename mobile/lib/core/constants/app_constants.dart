@@ -11,7 +11,7 @@ class AppConstants {
   static const String defaultUserId = 'demo_user_1';
 
   /// Default ZIP code.
-  static const String defaultZipCode = '92101';
+  static const String defaultZipCode = '92117';
 
   /// Maximum items in autocomplete suggestions.
   static const int maxAutocompleteSuggestions = 10;
